@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>User Activity Example</title>
+</head>
+<body>
+<button id="createPostButton">Create Post</button>
+<button id="deleteLastPostButton" disabled>Delete Last Post</button>
+<button id="deleteAllPostsButton" disabled>Delete All Posts</button>
+<button id="restorePostsButton" disabled>Restore Posts</button>
+<div id="postsContainer"></div>
+<script>
+function createPost(post) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(post);
+    }, 1000);
+  });
+}
+
+function updateLastUserActivityTime(userId) {
+  return new Promise((resolve) => {
+    const options = {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      second: 'numeric',
+      timeZone: 'Asia/Kolkata', // Indian Standard Time
+    };
+
+    const lastActivityTime = new Date().toLocaleString('en-IN', options);
+    setTimeout(() => {
+      resolve(lastActivityTime);
+    }, 1000);
+  });
+}
+
+function deleteLastPost(posts) {
+  return new Promise((resolve) => {
+    resolve(posts.slice(0, -1));
+  });
+}
+
+function deleteAllPosts(posts) {
+  return new Promise((resolve) => {
+    resolve([]);
+  });
+}
+
+async function updateUI(posts, lastActivityTime) {
+  const postsContainer = document.getElementById('postsContainer');
+  postsContainer.innerHTML = '';
+
+  const postsList = document.createElement('ul');
+  posts.forEach((post) => {
+    const listItem = document.createElement('li');
+    listItem.textContent = post;
+    postsList.appendChild(listItem);
+  });
+
+  const lastActivityTimeElement = document.createElement('p');
+  lastActivityTimeElement.textContent = `Last Activity Time (IST): ${lastActivityTime}`;
+
+  postsContainer.appendChild(postsList);
+  postsContainer.appendChild(lastActivityTimeElement);
+}
+
+async function main() {
+  const userPosts = [];
+  let originalPosts = [];
+
+  const createPostButton = document.getElementById('createPostButton');
+  const deleteLastPostButton = document.getElementById('deleteLastPostButton');
+  const deleteAllPostsButton = document.getElementById('deleteAllPostsButton');
+  const restorePostsButton = document.getElementById('restorePostsButton');
+
+  createPostButton.addEventListener('click', async () => {
+    const lastActivityTimePromise = updateLastUserActivityTime('user123');
+    const newPostPromise = createPost(`Post ${userPosts.length + 1}`);
+    const [lastActivityTime, newPost] = await Promise.all([lastActivityTimePromise, newPostPromise]);
+
+    userPosts.push(newPost);
+    originalPosts = [...userPosts]; // Save the original posts
+    await updateUI(userPosts, lastActivityTime);
+
+    deleteLastPostButton.removeAttribute('disabled');
+    deleteAllPostsButton.removeAttribute('disabled');
+    restorePostsButton.removeAttribute('disabled');
+  });
+
+  deleteLastPostButton.addEventListener('click', async () => {
+    if (userPosts.length > 0) {
+      const updatedPosts = await deleteLastPost(userPosts);
+      const lastActivityTime = await updateLastUserActivityTime('user123');
+      await updateUI(updatedPosts, lastActivityTime);
+      
+      if (updatedPosts.length === 0) {
+        deleteLastPostButton.setAttribute('disabled', 'true');
+      }
+    }
+  });
+
+  deleteAllPostsButton.addEventListener('click', async () => {
+    if (userPosts.length > 0) {
+      await deleteAllPosts(userPosts);
+      const lastActivityTime = await updateLastUserActivityTime('user123');
+      await updateUI([], lastActivityTime);
+      deleteLastPostButton.setAttribute('disabled', 'true');
+      deleteAllPostsButton.setAttribute('disabled', 'true');
+      restorePostsButton.setAttribute('disabled', 'true');
+    }
+  });
+
+  restorePostsButton.addEventListener('click', async () => {
+    userPosts = [...originalPosts]; // Restore the original posts
+    const lastActivityTime = await updateLastUserActivityTime('user123');
+    await updateUI(userPosts, lastActivityTime);
+    restorePostsButton.setAttribute('disabled', 'true');
+  });
+}
+
+main();
+</script>
+</body>
+</html>
